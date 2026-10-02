@@ -52,6 +52,31 @@ Redline evaluates dialogue transcripts against deterministic operational reading
 
 ---
 
+## Desktop Test Cases & Verification Gallery
+
+Every compliance scenario and evaluation mode has high-resolution desktop captures recorded in [`screenshots/`](screenshots/):
+
+| Case | Scenario | Mode & Agent | Description / Verified Behavior | Image |
+| :--- | :--- | :--- | :--- | :--- |
+| **01** | Late-night call | Naive (Full) | Flags calling hours (21:40) & missing Mini-Miranda disclosure | [`01_case1_late_night_naive.png`](screenshots/01_case1_late_night_naive.png) |
+| **02** | Late-night call | Guarded | System blocks outbound call before dialing (rescheduled 9:00 AM) | [`02_case1_late_night_guarded.png`](screenshots/02_case1_late_night_guarded.png) |
+| **03** | Stop calling me | Naive (Full) | Flags 2 cease-communication violations after borrower says stop | [`03_case2_stop_calling_naive_full.png`](screenshots/03_case2_stop_calling_naive_full.png) |
+| **04** | Stop calling me | Naive (Turn) | **Missed violation**: Turn checker misses cease context; flagged as context-dependent | [`04_case2_stop_calling_naive_turn_missed.png`](screenshots/04_case2_stop_calling_naive_turn_missed.png) |
+| **05** | Stop calling me | Guarded | Immediately logs cease request and terminates phone outreach | [`05_case2_stop_calling_guarded.png`](screenshots/05_case2_stop_calling_guarded.png) |
+| **06** | Spouse answers | Naive (Full) | Flags 2 third-party disclosure violations for revealing debt balance to spouse | [`06_case3_spouse_answers_naive.png`](screenshots/06_case3_spouse_answers_naive.png) |
+| **07** | Spouse answers | Guarded | Strictly refuses debt disclosure; requests callback from primary debtor | [`07_case3_spouse_answers_guarded.png`](screenshots/07_case3_spouse_answers_guarded.png) |
+| **08** | That's not my debt | Naive (Full) | Flags 2 violations for continuing collection after formal debt dispute | [`08_case4_dispute_naive_full.png`](screenshots/08_case4_dispute_naive_full.png) |
+| **09** | That's not my debt | Naive (Turn) | **Missed violation**: Turn checker misses prior dispute; marked as context-dependent | [`09_case4_dispute_naive_turn_missed.png`](screenshots/09_case4_dispute_naive_turn_missed.png) |
+| **10** | That's not my debt | Guarded | Pauses collection; issues written validation notice with original creditor name | [`10_case4_dispute_guarded.png`](screenshots/10_case4_dispute_guarded.png) |
+| **11** | Job loss | Naive (Full) | Flags missing disclosure & illegal lawsuit/wage garnishment threats | [`11_case5_job_loss_threat_naive.png`](screenshots/11_case5_job_loss_threat_naive.png) |
+| **12** | Job loss | Guarded | Discloses Mini-Miranda; offers empathetic 60-day pause or hardship reduction | [`12_case5_job_loss_guarded.png`](screenshots/12_case5_job_loss_guarded.png) |
+| **13** | 8th call this week | Naive (Full) | Flags Reg F 7-in-7 statutory call attempt limit exceeded | [`13_case6_frequency_naive.png`](screenshots/13_case6_frequency_naive.png) |
+| **14** | 8th call this week | Guarded | System blocks outreach prior to dialing due to weekly window limit | [`14_case6_frequency_guarded.png`](screenshots/14_case6_frequency_guarded.png) |
+| **15** | Custom Transcript | Interactive | Evaluates arbitrary user dialogue with inline phrase redlining and verdict | [`15_case7_custom_transcript_evaluation.png`](screenshots/15_case7_custom_transcript_evaluation.png) |
+| **16** | Paper Light Theme | Naive (Full) | WCAG AA compliant paper-and-ink styling with mint/coral audit stamps | [`16_case_paper_light_mode.png`](screenshots/16_case_paper_light_mode.png) |
+
+---
+
 ## Limitations
 
 - **Scripted Transcripts:** All scenarios use synthetic test cases designed to isolate specific regulatory edge cases.

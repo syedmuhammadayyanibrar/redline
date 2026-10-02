@@ -680,6 +680,11 @@ body {
   margin-bottom: 4px;
 }
 
+.record-name:focus,
+.record-name:focus-visible {
+  outline: none;
+}
+
 .record-desc {
   font-family: var(--font-sans);
   font-size: 15px;
