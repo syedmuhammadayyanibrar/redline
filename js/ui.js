@@ -6,7 +6,7 @@ const state = {
   selectedAgent: 'naive', // 'naive' | 'guard'
   selectedScenarioIdx: 0,
   mode: 'full', // 'full' | 'turn'
-  theme: 'auto', // 'auto' | 'light' | 'dark'
+  theme: 'auto', // 'auto' | 'dark' | 'light'
   isCustom: false,
   customScenario: null,
   playback: {
@@ -19,46 +19,36 @@ const state = {
 
 // Cached DOM references
 const dom = {
-  themeToggle: document.getElementById('themeToggle'),
-  themeToggleLabel: document.getElementById('themeToggleLabel'),
-  scoreboardModeMeta: document.getElementById('scoreboardModeMeta'),
-  cardNaive: document.getElementById('cardNaive'),
+  themeAuto: document.getElementById('themeAuto'),
+  themeDark: document.getElementById('themeDark'),
+  themeLight: document.getElementById('themeLight'),
+  colNaive: document.getElementById('colNaive'),
   naiveScoreNum: document.getElementById('naiveScoreNum'),
-  naiveSegments: document.getElementById('naiveSegments'),
-  cardGuarded: document.getElementById('cardGuarded'),
+  naiveTicks: document.getElementById('naiveTicks'),
+  colGuarded: document.getElementById('colGuarded'),
   guardedScoreNum: document.getElementById('guardedScoreNum'),
-  guardedSegments: document.getElementById('guardedSegments'),
+  guardedTicks: document.getElementById('guardedTicks'),
   btnModeFull: document.getElementById('btnModeFull'),
   btnModeTurn: document.getElementById('btnModeTurn'),
-  modeHelperText: document.getElementById('modeHelperText'),
-  scenarioList: document.getElementById('scenarioList'),
-  scenarioTitle: document.getElementById('scenarioTitle'),
-  scenarioDesc: document.getElementById('scenarioDesc'),
+  modeHelper: document.getElementById('modeHelper'),
+  scenarioIndex: document.getElementById('scenarioIndex'),
+  recordName: document.getElementById('recordName'),
+  recordDesc: document.getElementById('recordDesc'),
   btnPlay: document.getElementById('btnPlay'),
   btnSkip: document.getElementById('btnSkip'),
-  playLabel: document.getElementById('playLabel'),
-  ticketCellTime: document.getElementById('ticketCellTime'),
-  ticketValTime: document.getElementById('ticketValTime'),
-  ticketFlagTime: document.getElementById('ticketFlagTime'),
-  ticketCellCalls: document.getElementById('ticketCellCalls'),
-  ticketValCalls: document.getElementById('ticketValCalls'),
-  ticketFlagCalls: document.getElementById('ticketFlagCalls'),
-  ticketCellAnswered: document.getElementById('ticketCellAnswered'),
-  ticketValAnswered: document.getElementById('ticketValAnswered'),
-  ticketFlagAnswered: document.getElementById('ticketFlagAnswered'),
-  mobileCountChip: document.getElementById('mobileCountChip'),
+  tapeTrack: document.getElementById('tapeTrack'),
+  tapePlayhead: document.getElementById('tapePlayhead'),
+  callTicket: document.getElementById('callTicket'),
   transcriptStream: document.getElementById('transcriptStream'),
-  marginList: document.getElementById('marginList'),
-  verdictBar: document.getElementById('verdictBar'),
-  verdictHeading: document.getElementById('verdictHeading'),
-  verdictDetail: document.getElementById('verdictDetail'),
+  verdictStamp: document.getElementById('verdictStamp'),
+  verdictSentence: document.getElementById('verdictSentence'),
   customTextarea: document.getElementById('customTextarea'),
-  customInlineMsg: document.getElementById('customInlineMsg'),
   customTime: document.getElementById('customTime'),
   customCalls7: document.getElementById('customCalls7'),
   customThird: document.getElementById('customThird'),
   btnRunCustom: document.getElementById('btnRunCustom'),
-  btnLoadExample: document.getElementById('btnLoadExample')
+  btnLoadExample: document.getElementById('btnLoadExample'),
+  customError: document.getElementById('customError')
 };
 
 /**
@@ -75,121 +65,119 @@ function escapeHtml(str) {
 }
 
 /**
- * Theme toggle handler: Auto -> Light -> Dark -> Auto.
+ * Theme toggle handler: Auto / Dark / Light.
  * Remembers nothing (no localStorage).
  */
-function handleThemeToggle() {
-  if (state.theme === 'auto') {
-    state.theme = 'light';
-    document.documentElement.setAttribute('data-theme', 'light');
-    dom.themeToggleLabel.textContent = 'Theme: Light';
-  } else if (state.theme === 'light') {
-    state.theme = 'dark';
+function setTheme(newTheme) {
+  state.theme = newTheme;
+  if (newTheme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-    dom.themeToggleLabel.textContent = 'Theme: Dark';
+  } else if (newTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
   } else {
-    state.theme = 'auto';
     document.documentElement.removeAttribute('data-theme');
-    dom.themeToggleLabel.textContent = 'Theme: Auto';
   }
+
+  [dom.themeAuto, dom.themeDark, dom.themeLight].forEach(btn => {
+    if (btn) {
+      const isMatch = btn.dataset.themeVal === newTheme;
+      btn.classList.toggle('active', isMatch);
+      btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+    }
+  });
 }
 
 /**
- * Updates scoreboard cards and 6-segment breakdown bars.
+ * Updates scoreboard versus strip (numeral, ticks, selected state).
  */
 function renderScoreboard() {
   let naiveCleanCount = 0;
   let guardedCleanCount = 0;
-  const naiveSegmentsData = [];
-  const guardedSegmentsData = [];
+  const naiveTicksData = [];
+  const guardedTicksData = [];
 
-  scenarios.forEach((sc, idx) => {
-    // Audit naive
+  scenarios.forEach(sc => {
+    // Naive audit
     const vNaive = check({ meta: sc.meta, lines: sc.naive }, state.mode);
     const naiveClean = vNaive.length === 0;
     if (naiveClean) naiveCleanCount++;
-    naiveSegmentsData.push({
+    naiveTicksData.push({
       name: sc.name,
-      count: vNaive.length,
-      clean: naiveClean
+      clean: naiveClean,
+      count: vNaive.length
     });
 
-    // Audit guard
+    // Guarded audit
     const vGuard = check({ meta: sc.meta, lines: sc.guard }, state.mode);
     const guardClean = vGuard.length === 0;
     if (guardClean) guardedCleanCount++;
-    guardedSegmentsData.push({
+    guardedTicksData.push({
       name: sc.name,
-      count: vGuard.length,
-      clean: guardClean
+      clean: guardClean,
+      count: vGuard.length
     });
   });
 
-  // Big numbers
   dom.naiveScoreNum.textContent = `${naiveCleanCount}/6`;
   dom.guardedScoreNum.textContent = `${guardedCleanCount}/6`;
 
-  // Render naive segments
-  dom.naiveSegments.innerHTML = '';
-  naiveSegmentsData.forEach(s => {
-    const seg = document.createElement('div');
-    seg.className = `score-segment ${s.clean ? 'clean' : 'flagged'}`;
-    const label = `${s.name}: ${s.clean ? 'clean' : s.count + ' flagged'}`;
-    seg.title = label;
-    seg.setAttribute('aria-label', label);
-    dom.naiveSegments.appendChild(seg);
+  // Render 6 ticks for Naive
+  dom.naiveTicks.innerHTML = '';
+  naiveTicksData.forEach(t => {
+    const tick = document.createElement('div');
+    tick.className = `versus-tick ${t.clean ? 'clean' : 'flagged'}`;
+    const label = `${t.name}: ${t.clean ? 'clean' : t.count + ' flagged'}`;
+    tick.title = label;
+    tick.setAttribute('aria-label', label);
+    dom.naiveTicks.appendChild(tick);
   });
 
-  // Render guarded segments
-  dom.guardedSegments.innerHTML = '';
-  guardedSegmentsData.forEach(s => {
-    const seg = document.createElement('div');
-    seg.className = `score-segment ${s.clean ? 'clean' : 'flagged'}`;
-    const label = `${s.name}: ${s.clean ? 'clean' : s.count + ' flagged'}`;
-    seg.title = label;
-    seg.setAttribute('aria-label', label);
-    dom.guardedSegments.appendChild(seg);
+  // Render 6 ticks for Guarded
+  dom.guardedTicks.innerHTML = '';
+  guardedTicksData.forEach(t => {
+    const tick = document.createElement('div');
+    tick.className = `versus-tick ${t.clean ? 'clean' : 'flagged'}`;
+    const label = `${t.name}: ${t.clean ? 'clean' : t.count + ' flagged'}`;
+    tick.title = label;
+    tick.setAttribute('aria-label', label);
+    dom.guardedTicks.appendChild(tick);
   });
 
-  // Selected card styles
-  if (state.selectedAgent === 'naive') {
-    dom.cardNaive.classList.add('selected');
-    dom.cardNaive.setAttribute('aria-pressed', 'true');
-    dom.cardGuarded.classList.remove('selected');
-    dom.cardGuarded.setAttribute('aria-pressed', 'false');
-  } else {
-    dom.cardGuarded.classList.add('selected');
-    dom.cardGuarded.setAttribute('aria-pressed', 'true');
-    dom.cardNaive.classList.remove('selected');
-    dom.cardNaive.setAttribute('aria-pressed', 'false');
-  }
+  // Selection state
+  const isNaiveSelected = state.selectedAgent === 'naive';
+  dom.colNaive.classList.toggle('selected', isNaiveSelected);
+  dom.colNaive.setAttribute('aria-pressed', isNaiveSelected ? 'true' : 'false');
 
-  // Header meta
-  dom.scoreboardModeMeta.textContent = state.mode === 'full' ? 'MODE: FULL CONVERSATION' : 'MODE: TURN BY TURN';
+  dom.colGuarded.classList.toggle('selected', !isNaiveSelected);
+  dom.colGuarded.setAttribute('aria-pressed', !isNaiveSelected ? 'true' : 'false');
 }
 
 /**
- * Renders scenario list on left.
+ * Renders scenario index (numbered typographic list).
  */
-function renderScenarioList() {
-  dom.scenarioList.innerHTML = '';
+function renderScenarioIndex() {
+  dom.scenarioIndex.innerHTML = '';
 
   scenarios.forEach((sc, idx) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     const isActive = !state.isCustom && idx === state.selectedScenarioIdx;
-    btn.className = `scenario-item-btn ${isActive ? 'active' : ''}`;
+    btn.className = `scenario-row ${isActive ? 'active' : ''}`;
     btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
 
     const lines = sc[state.selectedAgent];
     const violations = check({ meta: sc.meta, lines }, state.mode);
     const isClean = violations.length === 0;
 
+    const numStr = String(idx + 1).padStart(2, '0');
+
     btn.innerHTML = `
-      <span class="scenario-item-name">${escapeHtml(sc.name)}</span>
-      <span class="status-pill ${isClean ? 'clean' : 'flagged'}">
-        ${isClean ? 'clean' : violations.length + ' flagged'}
+      <span class="scenario-num">${numStr}</span>
+      <span class="scenario-name">${escapeHtml(sc.name)}</span>
+      <span class="scenario-status ${isClean ? 'clean' : 'flagged'}">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>${isClean ? 'clean' : violations.length + ' flagged'}</span>
       </span>
     `;
 
@@ -197,16 +185,16 @@ function renderScenarioList() {
       state.isCustom = false;
       state.selectedScenarioIdx = idx;
       stopPlayback();
-      renderScenarioList();
-      renderReviewPanel();
+      renderScenarioIndex();
+      renderCallRecord();
     });
 
-    dom.scenarioList.appendChild(btn);
+    dom.scenarioIndex.appendChild(btn);
   });
 }
 
 /**
- * Gets currently active scenario.
+ * Returns current scenario object.
  */
 function getCurrentScenario() {
   if (state.isCustom && state.customScenario) {
@@ -222,70 +210,210 @@ function getCurrentScenario() {
 }
 
 /**
- * Renders call review panel.
+ * Merges and marks spans inside a text string.
  */
-function renderReviewPanel() {
+function highlightOffendingPhrases(rawText, activeViolations, missedViolations) {
+  // If there are no spans, return null so caller knows whether to underline whole line
+  const spanRanges = [];
+
+  activeViolations.forEach(v => {
+    if (v.span && Array.isArray(v.span) && v.span.length === 2) {
+      spanRanges.push({ start: v.span[0], end: v.span[1], type: 'flagged' });
+    }
+  });
+
+  missedViolations.forEach(v => {
+    if (v.span && Array.isArray(v.span) && v.span.length === 2) {
+      spanRanges.push({ start: v.span[0], end: v.span[1], type: 'missed' });
+    }
+  });
+
+  if (spanRanges.length === 0) {
+    return null;
+  }
+
+  // Sort by start index
+  spanRanges.sort((a, b) => a.start - b.start);
+
+  let resultHtml = '';
+  let cursor = 0;
+
+  for (const r of spanRanges) {
+    if (r.start < cursor) continue; // skip nested/overlapping for simplicity
+    if (r.start > cursor) {
+      resultHtml += escapeHtml(rawText.slice(cursor, r.start));
+    }
+    const phrase = rawText.slice(r.start, r.end);
+    const cls = r.type === 'missed' ? 'missed-phrase' : 'flagged-phrase';
+    resultHtml += `<mark class="${cls}">${escapeHtml(phrase)}</mark>`;
+    cursor = r.end;
+  }
+
+  if (cursor < rawText.length) {
+    resultHtml += escapeHtml(rawText.slice(cursor));
+  }
+
+  return resultHtml;
+}
+
+/**
+ * Renders Call Tape (signature element).
+ */
+function renderCallTape(lines, violations) {
+  // Remove existing ticks (keep playhead)
+  const existingTicks = dom.tapeTrack.querySelectorAll('.tape-tick');
+  existingTicks.forEach(t => t.remove());
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  lines.forEach((line, idx) => {
+    const role = line[0];
+    const lineV = violations.filter(v => v.i === idx);
+    const hasV = lineV.length > 0;
+
+    const tick = document.createElement('button');
+    tick.type = 'button';
+    tick.id = `tick-${idx}`;
+    tick.dataset.index = String(idx);
+
+    let roleCls = 'ag';
+    let roleLabel = 'Agent';
+    if (role === 'bo') {
+      roleCls = 'bo';
+      roleLabel = 'Borrower';
+    } else if (role === 'sys') {
+      roleCls = 'sys';
+      roleLabel = 'System';
+    }
+
+    const isLit = !state.playback.isPlaying || idx <= state.playback.lineIndex || prefersReduced;
+
+    tick.className = `tape-tick ${roleCls} ${hasV ? 'violating' : ''} ${isLit ? 'lit' : ''}`;
+    tick.setAttribute('aria-label', `Line ${idx + 1}: ${roleLabel}. ${hasV ? lineV.length + ' violation(s)' : 'Clean'}.`);
+
+    tick.innerHTML = `
+      <span class="tick-dot" aria-hidden="true"></span>
+      <span class="tick-bar" aria-hidden="true"></span>
+      <span class="tick-label" aria-hidden="true">${idx + 1}</span>
+    `;
+
+    // Keyboard arrow navigation
+    tick.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const next = document.getElementById(`tick-${idx + 1}`);
+        if (next) next.focus();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const prev = document.getElementById(`tick-${idx - 1}`);
+        if (prev) prev.focus();
+      }
+    });
+
+    // Click to scroll to line & highlight
+    tick.addEventListener('click', () => {
+      jumpToLine(idx);
+    });
+
+    dom.tapeTrack.appendChild(tick);
+  });
+
+  updatePlayhead();
+}
+
+/**
+ * Updates playhead position on the Call Tape.
+ */
+function updatePlayhead() {
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!state.playback.isPlaying || prefersReduced || state.playback.lineIndex < 0) {
+    dom.tapePlayhead.style.display = 'none';
+    return;
+  }
+
+  const currentTick = document.getElementById(`tick-${state.playback.lineIndex}`);
+  if (currentTick) {
+    dom.tapePlayhead.style.display = 'block';
+    const leftPos = currentTick.offsetLeft + (currentTick.offsetWidth / 2);
+    dom.tapePlayhead.style.left = `${leftPos}px`;
+  }
+}
+
+/**
+ * Scrolls to a line and gives it a flash highlight.
+ */
+function jumpToLine(idx) {
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lineEl = document.getElementById(`transcriptLine-${idx}`);
+  if (lineEl) {
+    lineEl.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'center' });
+    lineEl.classList.remove('jump-flash');
+    // Trigger reflow for animation restart
+    void lineEl.offsetWidth;
+    lineEl.classList.add('jump-flash');
+  }
+}
+
+/**
+ * Renders call record details (header, tape, ticket, transcript, verdict stamp).
+ */
+function renderCallRecord() {
   const current = getCurrentScenario();
   const meta = current.meta || {};
   const lines = current.lines || [];
 
-  dom.scenarioTitle.textContent = current.name;
-  dom.scenarioDesc.textContent = current.desc;
+  dom.recordName.textContent = current.name;
+  dom.recordDesc.textContent = current.desc;
 
-  // Run audit
+  // Run engine
   const violations = check({ meta, lines }, state.mode);
   const ctxOnly = contextOnly({ meta, lines });
 
-  // 1. Call Ticket Strip
-  // Time window: outside 08:00 to 20:59 (h < 8 || h >= 21)
+  // Update Call Tape
+  renderCallTape(lines, violations);
+
+  // Update Call Ticket
+  // LOCAL TIME / ATTEMPTS IN 7 DAYS / ANSWERED BY
   const h = parseInt(String(meta.time || '').split(':')[0], 10);
   const isTimeViolation = !isNaN(h) && (h < 8 || h >= 21);
-  dom.ticketValTime.textContent = meta.time || '12:00';
-  if (isTimeViolation) {
-    dom.ticketCellTime.classList.add('violation');
-    dom.ticketFlagTime.style.display = 'inline-flex';
-  } else {
-    dom.ticketCellTime.classList.remove('violation');
-    dom.ticketFlagTime.style.display = 'none';
-  }
+  const timeFlag = isTimeViolation ? ' (outside window)' : '';
 
-  // Call frequency limit: calls7 >= 7
   const calls7 = parseInt(meta.calls7, 10) || 0;
   const isCallsViolation = calls7 >= 7;
-  dom.ticketValCalls.textContent = String(calls7);
-  if (isCallsViolation) {
-    dom.ticketCellCalls.classList.add('violation');
-    dom.ticketFlagCalls.style.display = 'inline-flex';
-  } else {
-    dom.ticketCellCalls.classList.remove('violation');
-    dom.ticketFlagCalls.style.display = 'none';
-  }
+  const callsFlag = isCallsViolation ? ' (limit reached)' : '';
 
-  // Answered by: Borrower or Someone else
   const isThird = Boolean(meta.third);
-  dom.ticketValAnswered.textContent = isThird ? 'Someone else' : 'Borrower';
   const hasThirdDisclosureViolation = isThird && violations.some(v => v.rule === 'Third-party disclosure');
-  if (hasThirdDisclosureViolation) {
-    dom.ticketCellAnswered.classList.add('violation');
-    dom.ticketFlagAnswered.style.display = 'inline-flex';
-  } else {
-    dom.ticketCellAnswered.classList.remove('violation');
-    dom.ticketFlagAnswered.style.display = 'none';
-  }
+  const answeredText = isThird ? 'someone else' : 'borrower';
+  const thirdFlag = hasThirdDisclosureViolation ? ' (third party)' : '';
 
-  // 2. Transcript Lines
+  dom.callTicket.innerHTML = `
+    <span class="ticket-field ${isTimeViolation ? 'flagged' : ''}">
+      LOCAL TIME ${escapeHtml(meta.time || '12:00')}${escapeHtml(timeFlag)}
+    </span>
+    <span class="ticket-sep" aria-hidden="true">/</span>
+    <span class="ticket-field ${isCallsViolation ? 'flagged' : ''}">
+      ATTEMPTS IN 7 DAYS ${calls7}${escapeHtml(callsFlag)}
+    </span>
+    <span class="ticket-sep" aria-hidden="true">/</span>
+    <span class="ticket-field ${hasThirdDisclosureViolation ? 'flagged' : ''}">
+      ANSWERED BY ${escapeHtml(answeredText)}${escapeHtml(thirdFlag)}
+    </span>
+  `;
+
+  // Render Transcript lines
   dom.transcriptStream.innerHTML = '';
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   lines.forEach((line, idx) => {
     const role = line[0];
-    const text = line[1];
+    const rawText = line[1];
 
     const row = document.createElement('div');
-    row.id = `transcriptRow-${idx}`;
-    row.className = `transcript-row ${role}`;
+    row.id = `transcriptLine-${idx}`;
+    row.className = `transcript-line ${role}`;
 
-    // If playback is active, hide lines past current index
+    // Playback reveal visibility
     if (state.playback.isPlaying && idx > state.playback.lineIndex && !prefersReduced) {
       row.style.display = 'none';
     }
@@ -297,229 +425,238 @@ function renderReviewPanel() {
       row.classList.add('violating');
     }
 
-    // Turn mode missed annotation styling
-    if (state.mode === 'turn' && lineCtx.length > 0) {
-      row.classList.add('missed-turn');
-    }
+    // Text formatting with spans
+    let textHtml = '';
+    const marked = highlightOffendingPhrases(rawText, lineV, state.mode === 'turn' ? lineCtx : []);
 
-    // Gutter text
-    let gutterText = '';
-    if (role === 'sys') {
-      gutterText = 'SYSTEM';
+    if (marked !== null) {
+      textHtml = marked;
+    } else if (lineV.length > 0) {
+      // No span: underline whole line
+      textHtml = `<mark class="flagged-phrase">${escapeHtml(rawText)}</mark>`;
     } else {
-      const lineNum = String(idx + 1).padStart(2, '0');
-      gutterText = `${lineNum} ${role === 'ag' ? 'AGENT' : 'BORROWER'}`;
+      textHtml = escapeHtml(rawText);
     }
 
-    // Annotations HTML
-    let annotationsHtml = '';
-    if (lineV.length > 0 || (state.mode === 'turn' && lineCtx.length > 0)) {
-      annotationsHtml += '<div class="annotations-container">';
+    // Gutter
+    let gutterHtml = '';
+    if (role === 'sys') {
+      gutterHtml = '';
+    } else {
+      const numStr = String(idx + 1).padStart(2, '0');
+      const speakerStr = role === 'ag' ? 'AGENT' : 'BORROWER';
+      gutterHtml = `
+        <div class="line-gutter">
+          <span class="line-num">${numStr}</span>
+          <span class="line-speaker">${speakerStr}</span>
+        </div>
+      `;
+    }
+
+    // Marginalia annotations
+    let marginaliaHtml = '';
+    const showActive = lineV.length > 0;
+    const showMissed = state.mode === 'turn' && lineCtx.length > 0;
+
+    if (showActive || showMissed) {
+      let itemsHtml = '';
 
       // Active violations
       lineV.forEach(v => {
-        const isContextDependent = state.mode === 'full' && lineCtx.some(c => c.rule === v.rule);
-        annotationsHtml += `
-          <div class="annotation-row">
-            <span class="annotation-chip">${escapeHtml(v.cite)}</span>
-            <span class="annotation-rule-name">${escapeHtml(v.rule)}</span>
-            ${isContextDependent ? '<span class="context-tag">CONTEXT</span>' : ''}
-            <span class="annotation-message">${escapeHtml(v.msg)}</span>
+        const isCtxInFull = state.mode === 'full' && lineCtx.some(c => c.rule === v.rule);
+        itemsHtml += `
+          <div class="marginalia-item">
+            <div class="marginalia-header">
+              ${isCtxInFull ? '<span class="marginalia-chip context">CONTEXT</span>' : ''}
+              <span class="marginalia-cite">${escapeHtml(v.cite)}</span>
+              <span class="marginalia-rule">${escapeHtml(v.rule)}</span>
+            </div>
+            <div class="marginalia-msg">${escapeHtml(v.msg)}</div>
           </div>
         `;
       });
 
       // Missed in turn mode
-      if (state.mode === 'turn') {
-        lineCtx.forEach(() => {
-          annotationsHtml += `
-            <div class="missed-annotation">
-              <span class="missed-chip">MISSED</span>
-              <span>Not caught by the turn-by-turn check. Needs context from earlier in the call.</span>
+      if (showMissed) {
+        lineCtx.forEach(v => {
+          itemsHtml += `
+            <div class="marginalia-item missed">
+              <div class="marginalia-header">
+                <span class="marginalia-chip missed">MISSED</span>
+                <span class="marginalia-cite">${escapeHtml(v.cite)}</span>
+                <span class="marginalia-rule">${escapeHtml(v.rule)}</span>
+              </div>
+              <div class="marginalia-msg">Missed by the turn-by-turn check. Needs context from earlier in the call.</div>
             </div>
           `;
         });
       }
 
-      annotationsHtml += '</div>';
+      marginaliaHtml = `
+        <div class="line-marginalia">
+          <div class="marginalia-connector ${showMissed && !showActive ? 'missed' : ''}" aria-hidden="true"></div>
+          <div class="marginalia-stack">
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
     }
 
     row.innerHTML = `
-      <div class="gutter-meta">${escapeHtml(gutterText)}</div>
-      <div class="row-text-content">
-        <span class="row-text-body">${escapeHtml(text)}</span>
-        ${annotationsHtml}
+      <div class="line-content-wrap">
+        ${gutterHtml}
+        <div class="line-body">
+          ${textHtml}
+        </div>
       </div>
+      ${marginaliaHtml}
     `;
 
     dom.transcriptStream.appendChild(row);
   });
 
-  // 3. Desktop Sticky Margin Summary (>= 1000px)
-  dom.marginList.innerHTML = '';
-  if (violations.length === 0) {
-    dom.marginList.innerHTML = '<div class="margin-clean-note">No violations found</div>';
+  // Render Verdict Stamp
+  const totalViolations = violations.length;
+  const isFailed = totalViolations > 0;
+
+  dom.verdictStamp.className = `verdict-stamp ${isFailed ? 'flagged' : 'clean'}`;
+  dom.verdictStamp.textContent = isFailed
+    ? `FAILED REVIEW · ${totalViolations} VIOLATION${totalViolations === 1 ? '' : 'S'}`
+    : 'CLEAR · NO VIOLATIONS';
+
+  if (isFailed) {
+    dom.verdictSentence.textContent = violations[0].msg;
+  } else if (lines.length > 0 && lines[0][0] === 'sys') {
+    dom.verdictSentence.textContent = 'The call was blocked before the agent spoke.';
   } else {
-    violations.forEach(v => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'margin-row-btn';
-      btn.innerHTML = `
-        <span class="margin-row-meta">${escapeHtml(v.cite)} · Line ${v.i + 1}</span>
-        <span class="margin-row-title">${escapeHtml(v.rule)}</span>
-      `;
-
-      btn.addEventListener('click', () => {
-        const targetRow = document.getElementById(`transcriptRow-${v.i}`);
-        if (targetRow) {
-          targetRow.scrollIntoView({
-            behavior: prefersReduced ? 'auto' : 'smooth',
-            block: 'center'
-          });
-          if (!prefersReduced) {
-            targetRow.classList.add('line-flash');
-            setTimeout(() => targetRow.classList.remove('line-flash'), 600);
-          }
-        }
-      });
-
-      dom.marginList.appendChild(btn);
-    });
+    dom.verdictSentence.textContent = 'The agent handled this conversation within legal boundaries.';
   }
 
-  // 4. Mobile Count Chip (< 1000px)
-  if (violations.length > 0) {
-    dom.mobileCountChip.classList.add('visible');
-    dom.mobileCountChip.textContent = `${violations.length} violation(s) flagged`;
-  } else {
-    dom.mobileCountChip.classList.remove('visible');
-    dom.mobileCountChip.textContent = '';
-  }
-
-  // 5. Verdict Bar
-  // Show verdict when not playing, or when playback has revealed all lines
-  const isFinished = !state.playback.isPlaying || state.playback.lineIndex >= lines.length - 1;
-  if (isFinished) {
-    dom.verdictBar.style.display = 'flex';
-    const isBlocked = lines.length === 1 && lines[0][0] === 'sys';
-
-    if (isBlocked) {
-      dom.verdictBar.className = 'verdict-bar clean';
-      dom.verdictHeading.textContent = 'No violations found. The call was blocked before the agent spoke.';
-      dom.verdictDetail.textContent = '';
-    } else if (violations.length === 0) {
-      dom.verdictBar.className = 'verdict-bar clean';
-      dom.verdictHeading.textContent = 'No violations found.';
-      dom.verdictDetail.textContent = '';
-    } else {
-      dom.verdictBar.className = 'verdict-bar flagged';
-      dom.verdictHeading.textContent = `${violations.length} violation(s) found. This call would fail review.`;
-      dom.verdictDetail.textContent = violations[0].msg;
-    }
-  } else {
-    dom.verdictBar.style.display = 'none';
+  // Trigger stamp animation if not playing
+  if (!state.playback.isPlaying) {
+    dom.verdictStamp.classList.remove('stamp-animate');
+    void dom.verdictStamp.offsetWidth;
+    dom.verdictStamp.classList.add('stamp-animate');
   }
 }
 
 /**
- * Playback handlers.
+ * Starts line-by-line playback (850ms per line).
  */
 function startPlayback() {
   const current = getCurrentScenario();
-  const totalLines = (current.lines || []).length;
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lines = current.lines || [];
+  if (lines.length === 0) return;
 
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) {
-    state.playback.isPlaying = false;
-    state.playback.lineIndex = totalLines;
-    renderReviewPanel();
+    stopPlayback(true);
     return;
   }
 
   state.playback.isPlaying = true;
   state.playback.lineIndex = 0;
-  dom.btnPlay.disabled = true;
-  dom.playLabel.textContent = `Playing 1/${totalLines}`;
-  dom.btnSkip.classList.add('visible');
 
-  renderReviewPanel();
+  dom.btnPlay.disabled = true;
+  dom.btnPlay.textContent = `Playing 1/${lines.length}`;
+  dom.btnSkip.style.display = 'inline-flex';
+
+  renderCallRecord();
 
   state.playback.timer = setInterval(() => {
     state.playback.lineIndex++;
-    if (state.playback.lineIndex >= totalLines) {
+    if (state.playback.lineIndex >= lines.length) {
       stopPlayback(true);
     } else {
-      dom.playLabel.textContent = `Playing ${state.playback.lineIndex + 1}/${totalLines}`;
-      renderReviewPanel();
+      dom.btnPlay.textContent = `Playing ${state.playback.lineIndex + 1}/${lines.length}`;
+      renderCallRecord();
+
+      // Line reveal animation
+      const lineEl = document.getElementById(`transcriptLine-${state.playback.lineIndex}`);
+      if (lineEl) {
+        lineEl.style.display = '';
+        lineEl.classList.add('revealing');
+      }
     }
   }, state.playback.speedMs);
 }
 
-function stopPlayback(completed = false) {
+/**
+ * Stops playback. If skipToEnd is true, reveals full transcript.
+ */
+function stopPlayback(skipToEnd = false) {
   if (state.playback.timer) {
     clearInterval(state.playback.timer);
     state.playback.timer = null;
   }
   state.playback.isPlaying = false;
-  dom.btnPlay.disabled = false;
-  dom.playLabel.textContent = completed ? 'Replay call' : 'Play call';
-  dom.btnSkip.classList.remove('visible');
+  state.playback.lineIndex = -1;
 
-  if (completed) {
-    state.playback.lineIndex = 999;
-  }
-  renderReviewPanel();
+  dom.btnPlay.disabled = false;
+  dom.btnPlay.textContent = 'Play call';
+  dom.btnSkip.style.display = 'none';
+
+  renderCallRecord();
 }
 
 /**
- * Custom transcript parsing and runner.
- * Lines starting with agent: or ag: become "ag".
- * Lines starting with borrower:, customer: or consumer: become "bo".
- * Everything else ignored.
+ * Handles custom transcript parse and audit.
  */
-function parseCustomTranscript(text) {
-  const rawLines = text.split('\n');
-  const lines = [];
-
-  for (const raw of rawLines) {
-    const trimmed = raw.trim();
-    if (!trimmed) continue;
-
-    const agMatch = trimmed.match(/^(?:agent|ag):\s*(.*)$/i);
-    if (agMatch) {
-      lines.push(['ag', agMatch[1].trim()]);
-      continue;
-    }
-
-    const boMatch = trimmed.match(/^(?:borrower|customer|consumer|bo):\s*(.*)$/i);
-    if (boMatch) {
-      lines.push(['bo', boMatch[1].trim()]);
-      continue;
-    }
-  }
-
-  return lines;
-}
-
 function handleRunCustomChecks() {
-  const text = dom.customTextarea.value;
-  const lines = parseCustomTranscript(text);
+  dom.customError.style.display = 'none';
+  dom.customError.textContent = '';
 
-  const hasAgentLine = lines.some(l => l[0] === 'ag');
-  if (!hasAgentLine) {
-    dom.customInlineMsg.classList.add('visible');
+  const text = (dom.customTextarea.value || '').trim();
+  if (!text) {
+    dom.customError.textContent = 'Please enter transcript lines in the format "ag: text", "bo: text", or "sys: text".';
+    dom.customError.style.display = 'block';
     return;
   }
 
-  dom.customInlineMsg.classList.remove('visible');
+  // Parse lines
+  const rawLines = text.split('\n');
+  const lines = [];
 
-  const timeVal = dom.customTime.value || '20:30';
+  for (let i = 0; i < rawLines.length; i++) {
+    const raw = rawLines[i].trim();
+    if (!raw) continue;
+
+    const match = raw.match(/^(ag|agent|bo|borrower|sys|system)\s*:\s*(.+)$/i);
+    if (!match) {
+      dom.customError.textContent = `Line ${i + 1} does not match format "ag: text", "bo: text", or "sys: text".`;
+      dom.customError.style.display = 'block';
+      return;
+    }
+
+    let role = 'ag';
+    const rLower = match[1].toLowerCase();
+    if (rLower === 'bo' || rLower === 'borrower') role = 'bo';
+    else if (rLower === 'sys' || rLower === 'system') role = 'sys';
+
+    lines.push([role, match[2].trim()]);
+  }
+
+  if (lines.length === 0) {
+    dom.customError.textContent = 'Please enter at least one conversation line.';
+    dom.customError.style.display = 'block';
+    return;
+  }
+
+  const hasAgentLine = lines.some(l => l[0] === 'ag');
+  if (!hasAgentLine && lines[0][0] !== 'sys') {
+    dom.customError.textContent = 'Transcript must contain at least one agent line (ag: ...) to evaluate.';
+    dom.customError.style.display = 'block';
+    return;
+  }
+
+  const timeVal = (dom.customTime.value || '12:00').trim();
   const calls7Val = parseInt(dom.customCalls7.value, 10) || 0;
   const thirdVal = dom.customThird.checked;
 
+  state.isCustom = true;
   state.customScenario = {
-    name: 'Your transcript',
-    desc: 'Custom conversation evaluated live against deterministic FDCPA & Reg F rules.',
+    name: 'Custom test transcript',
+    desc: `User submitted transcript · Time ${timeVal} · Prior calls: ${calls7Val} · Third-party: ${thirdVal ? 'Yes' : 'No'}`,
     meta: {
       time: timeVal,
       calls7: calls7Val,
@@ -528,68 +665,77 @@ function handleRunCustomChecks() {
     lines
   };
 
-  state.isCustom = true;
-  stopPlayback();
-  renderScenarioList();
-  renderReviewPanel();
+  stopPlayback(true);
+  renderScenarioIndex();
+  renderCallRecord();
 
-  // Move focus to result heading
-  dom.scenarioTitle.setAttribute('tabindex', '-1');
-  dom.scenarioTitle.focus();
-  dom.scenarioTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll to call record and set focus to title
+  dom.recordName.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  dom.recordName.focus();
 }
 
+/**
+ * Loads default example into custom test form.
+ */
 function handleLoadExample() {
-  dom.customTextarea.value = `Agent: Hi, this is Sam about your $640 balance.\nBorrower: Please stop calling me.\nAgent: If you don't pay this week we will sue you.`;
+  dom.customTextarea.value = [
+    'ag: Hi, this is Sam about your $640 balance.',
+    'bo: Please stop calling me.',
+    "ag: If you don't pay this week we will sue you."
+  ].join('\n');
+
   dom.customTime.value = '20:30';
-  dom.customCalls7.value = 3;
+  dom.customCalls7.value = '3';
   dom.customThird.checked = false;
-  dom.customInlineMsg.classList.remove('visible');
+  dom.customError.style.display = 'none';
+
   handleRunCustomChecks();
 }
 
 /**
- * Event listeners setup.
+ * Sets up all event listeners.
  */
 function setupEvents() {
-  // Theme toggle
-  dom.themeToggle.addEventListener('click', handleThemeToggle);
+  // Theme toggle buttons (Auto / Dark / Light)
+  if (dom.themeAuto) dom.themeAuto.addEventListener('click', () => setTheme('auto'));
+  if (dom.themeDark) dom.themeDark.addEventListener('click', () => setTheme('dark'));
+  if (dom.themeLight) dom.themeLight.addEventListener('click', () => setTheme('light'));
 
-  // Scoreboard cards selection
-  dom.cardNaive.addEventListener('click', () => {
+  // Scoreboard versus strip selection
+  dom.colNaive.addEventListener('click', () => {
     if (state.selectedAgent !== 'naive') {
       state.selectedAgent = 'naive';
       state.isCustom = false;
       stopPlayback();
       renderScoreboard();
-      renderScenarioList();
-      renderReviewPanel();
+      renderScenarioIndex();
+      renderCallRecord();
     }
   });
 
-  dom.cardGuarded.addEventListener('click', () => {
+  dom.colGuarded.addEventListener('click', () => {
     if (state.selectedAgent !== 'guard') {
       state.selectedAgent = 'guard';
       state.isCustom = false;
       stopPlayback();
       renderScoreboard();
-      renderScenarioList();
-      renderReviewPanel();
+      renderScenarioIndex();
+      renderCallRecord();
     }
   });
 
-  // Mode segmented toggle
+  // Mode switch
   dom.btnModeFull.addEventListener('click', () => {
     if (state.mode !== 'full') {
       state.mode = 'full';
       dom.btnModeFull.classList.add('active');
-      dom.btnModeFull.setAttribute('aria-pressed', 'true');
+      dom.btnModeFull.setAttribute('aria-selected', 'true');
       dom.btnModeTurn.classList.remove('active');
-      dom.btnModeTurn.setAttribute('aria-pressed', 'false');
-      dom.modeHelperText.textContent = 'Each line is judged with everything said before it.';
+      dom.btnModeTurn.setAttribute('aria-selected', 'false');
+      dom.modeHelper.textContent = 'Each line is judged with everything said before it.';
       renderScoreboard();
-      renderScenarioList();
-      renderReviewPanel();
+      renderScenarioIndex();
+      renderCallRecord();
     }
   });
 
@@ -597,21 +743,19 @@ function setupEvents() {
     if (state.mode !== 'turn') {
       state.mode = 'turn';
       dom.btnModeTurn.classList.add('active');
-      dom.btnModeTurn.setAttribute('aria-pressed', 'true');
+      dom.btnModeTurn.setAttribute('aria-selected', 'true');
       dom.btnModeFull.classList.remove('active');
-      dom.btnModeFull.setAttribute('aria-pressed', 'false');
-      dom.modeHelperText.textContent = 'Each line is judged alone, with no memory of earlier lines.';
+      dom.btnModeFull.setAttribute('aria-selected', 'false');
+      dom.modeHelper.textContent = 'Each line is judged alone, with no memory of earlier lines.';
       renderScoreboard();
-      renderScenarioList();
-      renderReviewPanel();
+      renderScenarioIndex();
+      renderCallRecord();
     }
   });
 
-  // Playback
+  // Play controls
   dom.btnPlay.addEventListener('click', () => {
-    if (state.playback.isPlaying) {
-      stopPlayback(false);
-    } else {
+    if (!state.playback.isPlaying) {
       startPlayback();
     }
   });
@@ -626,16 +770,23 @@ function setupEvents() {
 }
 
 /**
- * App initialization.
+ * Initializes application.
  */
 function init() {
   setupEvents();
+
+  // Support ?theme=light or ?theme=dark query param
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramTheme = urlParams.get('theme');
+  if (paramTheme === 'light' || paramTheme === 'dark') {
+    setTheme(paramTheme);
+  }
+
   renderScoreboard();
-  renderScenarioList();
-  renderReviewPanel();
+  renderScenarioIndex();
+  renderCallRecord();
 }
 
-// Bootstrap
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {

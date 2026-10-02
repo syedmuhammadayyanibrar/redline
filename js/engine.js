@@ -55,25 +55,35 @@ export function check(s, mode = "full") {
     // If meta.third is true: flag every agent line where DEBT matches or /collect|recovery|account/i matches
     for (const i of ag) {
       const text = Array.isArray(lines[i]) ? lines[i][1] : lines[i].text;
-      if (DEBT.test(text) || /collect|recovery|account/i.test(text)) {
-        violations.push({
+      const match = text.match(DEBT) || text.match(/collect|recovery|account/i);
+      if (match) {
+        const v = {
           i,
           rule: "Third-party disclosure",
           cite: "FDCPA §805(b)",
           msg: "Debt information shared with someone other than the borrower."
-        });
+        };
+        if (match.index !== undefined) {
+          v.span = [match.index, match.index + match[0].length];
+        }
+        violations.push(v);
       }
     }
   } else {
     // Missing disclosure: find the first agent line matching DEBT;
     // if found and NO agent line matches /attempt to collect a debt/i, flag that line
     let firstDebtAgIdx = -1;
+    let debtMatch = null;
     let hasMiranda = false;
 
     for (const i of ag) {
       const text = Array.isArray(lines[i]) ? lines[i][1] : lines[i].text;
-      if (firstDebtAgIdx === -1 && DEBT.test(text)) {
-        firstDebtAgIdx = i;
+      if (firstDebtAgIdx === -1) {
+        const m = text.match(DEBT);
+        if (m) {
+          firstDebtAgIdx = i;
+          debtMatch = m;
+        }
       }
       if (/attempt to collect a debt/i.test(text)) {
         hasMiranda = true;
@@ -81,12 +91,16 @@ export function check(s, mode = "full") {
     }
 
     if (firstDebtAgIdx !== -1 && !hasMiranda) {
-      violations.push({
+      const v = {
         i: firstDebtAgIdx,
         rule: "Missing disclosure",
         cite: "FDCPA §807(11)",
         msg: "Debt discussed without saying this is an attempt to collect a debt."
-      });
+      };
+      if (debtMatch && debtMatch.index !== undefined) {
+        v.span = [debtMatch.index, debtMatch.index + debtMatch[0].length];
+      }
+      violations.push(v);
     }
 
     // Walk the lines in order with flags stop, disp, val (all false)
@@ -113,19 +127,29 @@ export function check(s, mode = "full") {
         }
 
         if (stop && DEBT.test(text) && !/no further|not contact/i.test(text)) {
-          violations.push({
+          const m = text.match(DEBT);
+          const v = {
             i,
             rule: "Cease communication",
             cite: "FDCPA §805(c)",
             msg: "Kept pressing for payment after the borrower asked to stop."
-          });
+          };
+          if (m && m.index !== undefined) {
+            v.span = [m.index, m.index + m[0].length];
+          }
+          violations.push(v);
         } else if (disp && !val && DEBT.test(text)) {
-          violations.push({
+          const m = text.match(DEBT);
+          const v = {
             i,
             rule: "Disputed debt",
             cite: "FDCPA §809(b)",
             msg: "Kept collecting after a dispute, with no validation or verification offered."
-          });
+          };
+          if (m && m.index !== undefined) {
+            v.span = [m.index, m.index + m[0].length];
+          }
+          violations.push(v);
         }
       }
     }
@@ -134,16 +158,21 @@ export function check(s, mode = "full") {
   // 4. Threats (every agent line, any scenario)
   for (const i of ag) {
     const text = Array.isArray(lines[i]) ? lines[i][1] : lines[i].text;
+    const threatMatch = text.match(/garnish|\bsue\b|lawsuit|arrest|jail|police|seize/i);
     if (
-      /garnish|\bsue\b|lawsuit|arrest|jail|police|seize/i.test(text) &&
+      threatMatch &&
       !/\b(cannot|can't|won't|will not|never)\b/i.test(text)
     ) {
-      violations.push({
+      const v = {
         i,
         rule: "Threat",
         cite: "FDCPA §807(4)–(5)",
         msg: "Threatens legal action or garnishment the agent cannot show it will take."
-      });
+      };
+      if (threatMatch.index !== undefined) {
+        v.span = [threatMatch.index, threatMatch.index + threatMatch[0].length];
+      }
+      violations.push(v);
     }
   }
 

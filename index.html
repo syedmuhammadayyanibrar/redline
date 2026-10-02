@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Redline — Voice Agent Compliance Test Bench | Veritus Pitch</title>
+  <title>Redline — Compliance Test Bench for AI Debt-Collection Voice Agents</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -14,231 +14,175 @@
   <!-- Accessible skip link -->
   <a href="#main" class="skip-link">Skip to main content</a>
 
-  <div class="container">
+  <div class="site-wrap">
 
-    <!-- a) Header -->
+    <!-- 1. Header -->
     <header class="site-header">
-      <div class="wordmark-group">
-        <span class="wordmark-bar" aria-hidden="true"></span>
+      <div class="wordmark-wrap">
         <span class="wordmark-text">Redline</span>
+        <svg class="wordmark-stroke" width="88" height="6" viewBox="0 0 88 6" fill="none" aria-hidden="true">
+          <path d="M1 3.5C22 1.8 62 4.6 87 2.8" stroke="var(--flag)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </div>
 
-      <button type="button" class="theme-toggle-btn" id="themeToggle" aria-label="Toggle color theme">
-        <span id="themeToggleLabel">Theme: Auto</span>
-      </button>
+      <div class="theme-toggle-group" role="group" aria-label="Color theme">
+        <button type="button" class="theme-btn active" id="themeAuto" data-theme-val="auto">Auto</button>
+        <span class="theme-sep" aria-hidden="true">/</span>
+        <button type="button" class="theme-btn" id="themeDark" data-theme-val="dark">Dark</button>
+        <span class="theme-sep" aria-hidden="true">/</span>
+        <button type="button" class="theme-btn" id="themeLight" data-theme-val="light">Light</button>
+      </div>
     </header>
 
     <main id="main">
 
-      <!-- b) Headline & Lede -->
-      <section class="hero-block">
-        <h1 class="hero-title">Break the collections agent before a regulator does.</h1>
-        <p class="hero-lede">Six hard calls, two versions of a voice agent. Every transcript is checked against FDCPA and Reg F rules, live in your browser. Pick an agent, pick a call, press play.</p>
+      <!-- 2. Hero -->
+      <section class="hero-section" aria-label="Overview">
+        <div class="hero-content">
+          <h1 class="hero-title">Break the collections agent before a <em>regulator</em> does.</h1>
+          <p class="hero-lede">Six hard calls, two versions of a voice agent. Every transcript is checked against FDCPA and Reg F rules, live in your browser. Pick an agent, pick a call, press play.</p>
+        </div>
       </section>
 
-      <!-- c) Scoreboard -->
+      <!-- 3. Scoreboard as a 'versus' strip, not cards -->
       <section class="scoreboard-section" aria-label="Agent compliance scoreboard">
-        <div class="section-label">
-          <span>COMPLIANCE SCOREBOARD</span>
-          <span class="mono" id="scoreboardModeMeta">MODE: FULL CONVERSATION</span>
-        </div>
-
-        <div class="scoreboard-grid">
-          <!-- Naive Agent Card -->
-          <button type="button" class="score-card naive selected" id="cardNaive" aria-pressed="true">
-            <div class="score-card-header">
-              <span class="score-agent-title">Naive agent</span>
-              <span class="score-viewing-tag">VIEWING</span>
-            </div>
-            <div class="score-stat-line">
-              <span class="score-big-number" id="naiveScoreNum">0/6</span>
-              <span class="score-stat-label">calls with no violations</span>
-            </div>
-            <div class="score-segment-bar" id="naiveSegments" role="img" aria-label="Naive agent score breakdown">
-              <!-- Injected by UI -->
+        <div class="versus-strip">
+          <button type="button" class="versus-col selected" id="colNaive" aria-pressed="true">
+            <span class="versus-label">NAIVE AGENT</span>
+            <span class="versus-num" id="naiveScoreNum">0/6</span>
+            <span class="versus-caption">calls with no violations</span>
+            <div class="versus-ticks" id="naiveTicks" role="img" aria-label="Naive agent score breakdown">
+              <!-- 6 ticks injected by JS -->
             </div>
           </button>
 
-          <!-- Guarded Agent Card -->
-          <button type="button" class="score-card guarded" id="cardGuarded" aria-pressed="false">
-            <div class="score-card-header">
-              <span class="score-agent-title">Guarded agent</span>
-              <span class="score-viewing-tag">VIEWING</span>
-            </div>
-            <div class="score-stat-line">
-              <span class="score-big-number" id="guardedScoreNum">6/6</span>
-              <span class="score-stat-label">calls with no violations</span>
-            </div>
-            <div class="score-segment-bar" id="guardedSegments" role="img" aria-label="Guarded agent score breakdown">
-              <!-- Injected by UI -->
+          <button type="button" class="versus-col" id="colGuarded" aria-pressed="false">
+            <span class="versus-label">GUARDED AGENT</span>
+            <span class="versus-num" id="guardedScoreNum">6/6</span>
+            <span class="versus-caption">calls with no violations</span>
+            <div class="versus-ticks" id="guardedTicks" role="img" aria-label="Guarded agent score breakdown">
+              <!-- 6 ticks injected by JS -->
             </div>
           </button>
         </div>
       </section>
 
-      <!-- d) Check mode switch (segmented control) -->
-      <section class="mode-switch-section" aria-label="Evaluation mode selection">
-        <div class="mode-control-row">
-          <div class="segmented-control" role="group" aria-label="Evaluation mode toggle">
-            <button type="button" class="segment-btn active" id="btnModeFull" aria-pressed="true">
+      <!-- 4. Mode switch -->
+      <section class="mode-section" aria-label="Evaluation mode selection">
+        <div class="mode-switch-wrap">
+          <div class="mode-tabs" role="tablist" aria-label="Evaluation mode">
+            <button type="button" class="mode-tab active" id="btnModeFull" role="tab" aria-selected="true">
               Full conversation
             </button>
-            <button type="button" class="segment-btn" id="btnModeTurn" aria-pressed="false">
+            <button type="button" class="mode-tab" id="btnModeTurn" role="tab" aria-selected="false">
               Turn by turn
             </button>
           </div>
-          <span class="mode-helper-text" id="modeHelperText">Each line is judged with everything said before it.</span>
+          <div class="mode-helper" id="modeHelper">
+            Each line is judged with everything said before it.
+          </div>
         </div>
       </section>
 
-      <!-- e) Main area: Scenario List (left) + Call Review Panel (right) -->
+      <!-- 5. Main area: Scenario Index (left 4 cols) + Call Record (right 8 cols) -->
       <section class="main-grid" aria-label="Call evaluation workbench">
 
-        <!-- Scenario list (left) -->
-        <aside class="scenario-sidebar" aria-label="Scenarios">
-          <div class="section-label">
-            <span>SCENARIOS</span>
-            <span class="mono">6 CALLS</span>
-          </div>
-          <div class="scenario-list" id="scenarioList" role="tablist" aria-orientation="vertical">
+        <!-- Scenario Index (left, 4 columns) -->
+        <aside class="scenario-aside" aria-label="Scenarios">
+          <div class="scenario-index" id="scenarioIndex" role="tablist" aria-orientation="vertical">
             <!-- Injected by UI -->
           </div>
         </aside>
 
-        <!-- Call review panel (right surface card) -->
-        <article class="call-review-panel" id="callReviewPanel" aria-label="Call review">
+        <!-- Call Record (right, 8 columns; no outer card, rule above) -->
+        <article class="call-record" id="callRecord" aria-label="Call record">
 
-          <!-- Header -->
-          <div class="review-header">
-            <div class="review-header-top">
-              <div>
-                <h2 class="review-title" id="scenarioTitle">Late-night call</h2>
-                <div class="review-desc" id="scenarioDesc">Borrower is in Chicago. Local time is 9:40 PM.</div>
-              </div>
-              <div class="review-actions">
-                <button type="button" class="btn-play" id="btnPlay">
-                  <span id="playLabel">Play call</span>
-                </button>
-                <button type="button" class="btn-skip" id="btnSkip">Skip to end</button>
-              </div>
+          <!-- Title row -->
+          <div class="record-title-row">
+            <div class="record-title-text">
+              <h2 class="record-name" id="recordName" tabindex="-1">Late-night call</h2>
+              <p class="record-desc" id="recordDesc">Borrower is in Chicago. Local time is 9:40 PM.</p>
+            </div>
+            <div class="record-actions" id="recordActions">
+              <button type="button" class="btn-play" id="btnPlay">Play call</button>
+              <button type="button" class="btn-skip" id="btnSkip" style="display:none;">Skip to end</button>
             </div>
           </div>
 
-          <!-- Call ticket strip -->
-          <div class="call-ticket-strip" id="callTicketStrip">
-            <div class="ticket-cell" id="ticketCellTime">
-              <span class="ticket-cell-label">LOCAL TIME</span>
-              <span class="ticket-cell-value">
-                <span id="ticketValTime">21:40</span>
-                <span class="ticket-flag-tag" id="ticketFlagTime" style="display:none;">
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                    <path d="M2 2h1.5v12H2V2zm2 1h9l-2 3.5 2 3.5H4V3z"/>
-                  </svg>
-                  outside window
-                </span>
-              </span>
-            </div>
-
-            <div class="ticket-cell" id="ticketCellCalls">
-              <span class="ticket-cell-label">ATTEMPTS (7 DAYS)</span>
-              <span class="ticket-cell-value">
-                <span id="ticketValCalls">2</span>
-                <span class="ticket-flag-tag" id="ticketFlagCalls" style="display:none;">
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                    <path d="M2 2h1.5v12H2V2zm2 1h9l-2 3.5 2 3.5H4V3z"/>
-                  </svg>
-                  limit reached
-                </span>
-              </span>
-            </div>
-
-            <div class="ticket-cell" id="ticketCellAnswered">
-              <span class="ticket-cell-label">ANSWERED BY</span>
-              <span class="ticket-cell-value">
-                <span id="ticketValAnswered">Borrower</span>
-                <span class="ticket-flag-tag" id="ticketFlagAnswered" style="display:none;">
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                    <path d="M2 2h1.5v12H2V2zm2 1h9l-2 3.5 2 3.5H4V3z"/>
-                  </svg>
-                  third party
-                </span>
-              </span>
+          <!-- The Call Tape (signature element) -->
+          <div class="tape-container" aria-label="Call tape">
+            <div class="tape-track" role="group" aria-label="Call tape navigation" id="tapeTrack">
+              <div class="tape-playhead" id="tapePlayhead" aria-hidden="true"></div>
+              <!-- Ticks injected by UI -->
             </div>
           </div>
 
-          <!-- Mobile count chip (collapsed) -->
-          <div class="mobile-count-chip" id="mobileCountChip"></div>
-
-          <!-- Review Body Layout: Transcript + Sticky Desktop Summary -->
-          <div class="review-body-layout">
-            <div class="transcript-stream" id="transcriptStream" aria-live="polite">
-              <!-- Injected by UI -->
-            </div>
-
-            <!-- Sticky desktop violations summary (>=1000px) -->
-            <aside class="margin-summary-col" id="marginSummaryCol" aria-label="Violations list">
-              <div class="margin-header">VIOLATIONS FOUND</div>
-              <div class="margin-list" id="marginList">
-                <!-- Injected by UI -->
-              </div>
-            </aside>
+          <!-- Call ticket -->
+          <div class="call-ticket" id="callTicket" aria-label="Call ticket metadata">
+            <!-- Injected by UI -->
           </div>
 
-          <!-- Verdict Bar at bottom -->
-          <div class="verdict-bar" id="verdictBar">
-            <div class="verdict-heading" id="verdictHeading">No violations found.</div>
-            <div class="verdict-detail" id="verdictDetail"></div>
+          <!-- Transcript lines with 96px gutter and marginalia -->
+          <div class="transcript-stream" id="transcriptStream" role="region" aria-label="Call transcript" aria-live="polite">
+            <!-- Injected by UI -->
+          </div>
+
+          <!-- Verdict as a rubber stamp -->
+          <div class="verdict-stamp-wrap" id="verdictStampWrap">
+            <div class="verdict-stamp flagged" id="verdictStamp">FAILED REVIEW · 2 VIOLATIONS</div>
+            <div class="verdict-sentence" id="verdictSentence">Call placed outside 8 AM–9 PM in the borrower's local time.</div>
           </div>
 
         </article>
 
       </section>
 
-      <!-- f) Test your own transcript panel -->
-      <section class="custom-panel" aria-label="Test your own transcript">
-        <div class="custom-panel-header">
-          <h2 class="custom-panel-title">Test your own transcript</h2>
-          <p class="custom-panel-instruction">One turn per line, starting with Agent: or Borrower:</p>
-        </div>
+      <!-- 6. Test your own transcript (full-width section under rule) -->
+      <section class="custom-section" aria-label="Test your own transcript">
+        <hr class="section-divider" aria-hidden="true">
+        <h2 class="custom-section-title">Test your own transcript</h2>
+        <div class="custom-grid">
 
-        <form class="custom-form-grid" id="customForm" onsubmit="return false;">
-          <div class="custom-textarea-col">
-            <label class="form-label" for="customTextarea">Conversation Transcript</label>
-            <textarea class="custom-textarea" id="customTextarea" spellcheck="false" placeholder="Agent: ...&#10;Borrower: ..."></textarea>
-            <div class="custom-inline-msg" id="customInlineMsg" role="alert">
-              No lines starting with Agent: were found. Add at least one.
-            </div>
+          <!-- Left (7 columns): ruled page textarea -->
+          <div class="custom-editor-col">
+            <label for="customTextarea" class="field-label-mono">TRANSCRIPT (ag: agent, bo: borrower, sys: system)</label>
+            <textarea id="customTextarea" class="ruled-textarea" spellcheck="false" rows="8" placeholder="ag: Hi Dana, this is Alex about your account balance of $1,420.
+bo: Please stop calling me.
+ag: Can you pay $50 today or we will garnish your wages?"></textarea>
+            <div class="custom-error" id="customError" role="alert" style="display:none;"></div>
           </div>
 
-          <div class="custom-settings-card">
-            <div class="form-field">
-              <label class="form-label" for="customTime">Local time</label>
-              <input type="time" class="form-input" id="customTime" value="20:30" required>
+          <!-- Right (5 columns): underlined inputs, run & example buttons -->
+          <div class="custom-params-col">
+            <div class="field-underlined">
+              <label for="customTime" class="field-label-mono">BORROWER LOCAL TIME</label>
+              <input type="text" id="customTime" class="field-input" value="21:40" placeholder="HH:MM (e.g. 21:40)">
             </div>
 
-            <div class="form-field">
-              <label class="form-label" for="customCalls7">Attempts in last 7 days</label>
-              <input type="number" class="form-input" id="customCalls7" min="0" value="3" required>
+            <div class="field-underlined">
+              <label for="customCalls7" class="field-label-mono">CALLS IN PRIOR 7 DAYS</label>
+              <input type="number" id="customCalls7" class="field-input" value="2" min="0" max="30">
             </div>
 
-            <label class="form-checkbox-row" for="customThird">
-              <input type="checkbox" id="customThird">
-              <span>Someone other than the borrower answered</span>
+            <label class="checkbox-underlined" for="customThird">
+              <input type="checkbox" id="customThird" class="checkbox-input">
+              <span class="checkbox-text">Someone other than borrower answered</span>
             </label>
 
-            <div class="custom-actions-row">
-              <button type="button" class="btn-primary-action" id="btnRunCustom">Run checks</button>
-              <button type="button" class="btn-secondary-action" id="btnLoadExample">Load example</button>
+            <div class="custom-buttons">
+              <button type="button" class="btn-run" id="btnRunCustom">Run checks</button>
+              <button type="button" class="btn-load" id="btnLoadExample">Load example</button>
             </div>
           </div>
-        </form>
+
+        </div>
       </section>
 
     </main>
 
-    <!-- g) Footer -->
+    <!-- 7. Footer -->
     <footer class="site-footer">
-      <p>The transcripts are scripted examples, and the naive agent is a deliberate strawman, not any real product. The rules are simplified readings of FDCPA §805, §807, §809 and Reg F §1006.6 and §1006.14, so confirm the legal details before relying on them. This is not legal advice. Built by Syed Ayyan as a sample project for Veritus.</p>
+      <p class="footer-disclaimer">The transcripts are scripted examples, and the naive agent is a deliberate strawman, not any real product. The rules are simplified readings of FDCPA §805, §807, §809 and Reg F §1006.6 and §1006.14, so confirm the legal details before relying on them. This is not legal advice. Built by Syed Ayyan as a sample project for Veritus.</p>
       <div class="footer-links">
         <a href="https://github.com/syedmuhammadayyanibrar" class="footer-link" target="_blank" rel="noopener">GitHub</a>
         <a href="https://resume-five-flame-98.vercel.app/" class="footer-link" target="_blank" rel="noopener">Resume</a>
