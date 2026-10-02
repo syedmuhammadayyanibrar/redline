@@ -1,0 +1,10 @@
+{
+  "name": "redline",
+  "version": "1.0.0",
+  "description": "Compliance test bench for AI debt-collection voice agents",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
